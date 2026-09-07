@@ -1,0 +1,45 @@
+{
+  "version": "v3-road-topology-stage2-v1",
+  "coordinate_source": "lutsk_addresses.tsv from the same local map bundle; coordinates reviewed against the fixed OSM road snapshot",
+  "real_cases": [
+    {
+      "id": "REAL_STATION_ZAVOKZALNYI",
+      "from": {"name": "Залізничний вокзал Луцьк", "latitude": 50.7579582667, "longitude": 25.3507039083},
+      "to": {"name": "Завокзальний", "latitude": 50.7587297, "longitude": 25.3577009},
+      "minimum_detour_ratio": 3.0,
+      "expected": "DETOUR_OR_RESTRICTED_CROSSING"
+    },
+    {
+      "id": "REAL_55_STATION",
+      "from": {"name": "55-й", "latitude": 50.7533579, "longitude": 25.3585723},
+      "to": {"name": "Залізничний вокзал Луцьк", "latitude": 50.7579582667, "longitude": 25.3507039083},
+      "minimum_detour_ratio": 2.5,
+      "expected": "ROAD_COST_GREATER_THAN_AIR_DISTANCE"
+    },
+    {
+      "id": "REAL_ZAVOKZALNYI_55",
+      "from": {"name": "Завокзальний", "latitude": 50.7587297, "longitude": 25.3577009},
+      "to": {"name": "55-й", "latitude": 50.7533579, "longitude": 25.3585723},
+      "minimum_detour_ratio": 1.3,
+      "minimum_directional_difference_m": 20.0,
+      "expected": "DIRECTIONAL_ROAD_COST"
+    },
+    {
+      "id": "REAL_40_BARRIER_REVIEW",
+      "from": {"name": "40-й квартал", "latitude": 50.7747415, "longitude": 25.3620216},
+      "to": {"name": "Завокзальний", "latitude": 50.7587297, "longitude": 25.3577009},
+      "minimum_detour_ratio": 1.15,
+      "expected": "NO_AIR_DISTANCE_SHORTCUT"
+    }
+  ],
+  "synthetic_case_ids": [
+    "SYNTHETIC_SAME_ROAD",
+    "SYNTHETIC_RAIL_DETOUR",
+    "SYNTHETIC_ONLY_BRIDGE",
+    "SYNTHETIC_ONE_WAY",
+    "SYNTHETIC_DISCONNECTED",
+    "SYNTHETIC_GRAPH_BOUNDARY",
+    "SYNTHETIC_POOR_SNAP",
+    "SYNTHETIC_SAME_CELL_BARRIER"
+  ]
+}

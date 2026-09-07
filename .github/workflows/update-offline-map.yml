@@ -13,19 +13,12 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: write
-env:
-  TAXI_HELPER_TOOLING_REF: 15c4cad1122573a599c8083682b23399ce89b804
 jobs:
   build-verify-publish:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: prostoPavelix/TaxiHelper
-          ref: ${{ env.TAXI_HELPER_TOOLING_REF }}
-          path: taxi-helper
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -73,10 +66,10 @@ jobs:
             build/offline-map/lutsk_area.osm build/offline-map/lutsk_addresses.tsv
           java -Xmx2g -cp build/offline-map/classes BuildStreetIndex \
             build/offline-map/lutsk_area.osm build/offline-map/lutsk_streets.tsv
-          python3 taxi-helper/tools/build_lightweight_visual_map.py build \
+          python3 map-tools/build_lightweight_visual_map.py build \
             --source build/offline-map/lutsk_area.osm --binary build/offline-map/visual_roads.bin \
             --manifest build/offline-map/visual-manifest.json
-          python3 taxi-helper/tools/v3_road_artifact.py --osm build/offline-map/lutsk_area.osm \
+          python3 map-tools/v3_road_artifact.py --osm build/offline-map/lutsk_area.osm \
             --output build/offline-map/road-v3
           cp build/offline-map/road-v3/road_graph.bin build/offline-map/
           cp build/offline-map/road-v3/road_anchor_index.bin build/offline-map/
@@ -85,11 +78,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 taxi-helper/tools/build_lightweight_visual_map.py verify \
+          python3 map-tools/build_lightweight_visual_map.py verify \
             --binary build/offline-map/visual_roads.bin --manifest build/offline-map/visual-manifest.json
-          PYTHONPATH=taxi-helper/tools python3 taxi-helper/tools/v3_road_artifact_verifier.py \
+          PYTHONPATH=map-tools python3 map-tools/v3_road_artifact_verifier.py \
             --osm build/offline-map/lutsk_area.osm --artifact-dir build/offline-map/road-v3 \
-            --topology-fixture taxi-helper/tools/fixtures/v3_road_topology_cases_stage2.json \
+            --topology-fixture map-tools/v3_road_topology_cases.json \
             --output build/offline-map/road-verification.json
           python3 - <<'PY'
           import json
@@ -105,7 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/release
-          python3 taxi-helper/tools/build_offline_map_manifest_v3.py \
+          python3 map-tools/build_offline_map_manifest_v4.py \
             --map build/offline-map/lutsk_area.map --addresses build/offline-map/lutsk_addresses.tsv \
             --streets build/offline-map/lutsk_streets.tsv --visual build/offline-map/visual_roads.bin \
             --visual-manifest build/offline-map/visual-manifest.json \
@@ -115,7 +108,7 @@ jobs:
             --statistics-json build/offline-map/statistics.json --output build/release \
             --version "$(date -u +%Y%m%d-%H%M%S)" --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           PREVIOUS=(); [ ! -f build/offline-map/previous/lutsk_addresses.tsv ] || PREVIOUS=(--previous build/offline-map/previous)
-          python3 taxi-helper/tools/verify_offline_map_release_v4.py --bundle build/release \
+          python3 map-tools/verify_offline_map_release_v4.py --bundle build/release \
             "${PREVIOUS[@]}" --output build/release/verification-report.json
       - name: Publish payload first and activation manifest last
         env:

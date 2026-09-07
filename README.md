@@ -18,3 +18,7 @@ Source: OpenStreetMap Volyn extract. Generated monthly and on manual workflow di
 The seven files are built from one snapshot. Publication is blocked by address/street coverage
 regressions, missing critical Lutsk street families, topology failures or mixed hashes. The phone
 activates only the whole verified format-4 bundle and retains the previous complete version.
+
+The public, standard-library-only builders and fixtures are vendored in `map-tools/`. The
+workflow therefore requires no access token for the private Android source repository and never
+receives driver history, sector geometry, learned addresses or manual corrections.
