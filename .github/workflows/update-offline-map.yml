@@ -1,154 +1,128 @@
-name: Update offline Volyn map
-
+name: Update atomic Taxi Helper map and V3 road bundle
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/update-offline-map.yml
-      - map-tools/**
   schedule:
-    # Monthly is frequent enough for the driver's offline address fallback and avoids needless work.
     - cron: "17 3 1 * *"
-
 concurrency:
   group: offline-map-release
   cancel-in-progress: false
-
 permissions:
   contents: write
-
+env:
+  TAXI_HELPER_TOOLING_REF: 15c4cad1122573a599c8083682b23399ce89b804
 jobs:
-  build-map:
+  build-verify-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: prostoPavelix/TaxiHelper
+          ref: ${{ env.TAXI_HELPER_TOOLING_REF }}
+          path: taxi-helper
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
-      - name: Download previous indexes for change statistics
+      - name: Download previous indexes
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
         run: |
           mkdir -p build/offline-map/previous
-          gh release download offline-map-latest \
-            --pattern 'lutsk_addresses.tsv' --pattern 'lutsk_streets.tsv' \
-            --dir build/offline-map/previous || true
-
-      - name: Build Mapsforge map from current OpenStreetMap extract
+          gh release download offline-map-latest --pattern 'lutsk_addresses.tsv' \
+            --pattern 'lutsk_streets.tsv' --dir build/offline-map/previous || true
+      - name: Build all source data from one OSM snapshot
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build/offline-map/tools build/offline-map/osmosis/lib/default
-          curl --fail --location --retry 3 \
-            --output build/offline-map/volyn.osm.pbf \
+          mkdir -p build/offline-map/osmosis/lib/default
+          curl -fL --retry 3 -o build/offline-map/volyn.osm.pbf \
             https://download.openstreetmap.fr/extracts/europe/ukraine/volyn_oblast-latest.osm.pbf
-          curl --fail --location --retry 3 \
-            --output build/offline-map/osmosis.zip \
+          curl -fL --retry 3 -o build/offline-map/osmosis.zip \
             https://github.com/openstreetmap/osmosis/releases/download/0.48.3/osmosis-0.48.3.zip
-          curl --fail --location --retry 3 \
-            --output build/offline-map/mapsforge-writer.jar \
+          curl -fL --retry 3 -o build/offline-map/mapsforge-writer.jar \
             https://repo.maven.apache.org/maven2/org/mapsforge/mapsforge-map-writer/0.25.0/mapsforge-map-writer-0.25.0-jar-with-dependencies.jar
           unzip -q build/offline-map/osmosis.zip -d build/offline-map/osmosis
-          OSMOSIS="$(find build/offline-map/osmosis -type f -path '*/bin/osmosis' | head -n 1)"
+          OSMOSIS="$(find build/offline-map/osmosis -type f -path '*/bin/osmosis' | head -1)"
           test -n "$OSMOSIS"
-          OSMOSIS_HOME="$(dirname "$(dirname "$OSMOSIS")")"
-          mkdir -p "$OSMOSIS_HOME/lib/default"
-          cp build/offline-map/mapsforge-writer.jar "$OSMOSIS_HOME/lib/default/"
-          PLUGIN_CONFIG="$OSMOSIS_HOME/config/osmosis-plugins.conf"
-          if [ -f "$PLUGIN_CONFIG" ]; then
-            sed -i '/org\.mapsforge\.map\.writer\.osmosis\.MapFileWriterPluginLoader/d' "$PLUGIN_CONFIG"
-            [ -s "$PLUGIN_CONFIG" ] || rm -f "$PLUGIN_CONFIG"
+          HOME_DIR="$(dirname "$(dirname "$OSMOSIS")")"
+          cp build/offline-map/mapsforge-writer.jar "$HOME_DIR/lib/default/"
+          PLUGIN="$HOME_DIR/config/osmosis-plugins.conf"
+          if [ -f "$PLUGIN" ]; then
+            sed -i '/org\.mapsforge\.map\.writer\.osmosis\.MapFileWriterPluginLoader/d' "$PLUGIN"
+            [ -s "$PLUGIN" ] || rm -f "$PLUGIN"
           fi
           chmod +x "$OSMOSIS"
-          JAVACMD_OPTIONS=-Xmx2g "$OSMOSIS" \
-            --rb file=build/offline-map/volyn.osm.pbf \
-            --mapfile-writer file=build/offline-map/lutsk_area.map \
-              type=hd \
-              bbox=50.62,25.12,50.87,25.52 \
-              map-start-position=50.7472,25.3254 \
-              map-start-zoom=13 \
-              preferred-languages=uk
-          test "$(stat -c %s build/offline-map/lutsk_area.map)" -gt 1048576
-
-          # The visual .map is not used by address recognition. Build the two compact indexes
-          # from the exact same OSM snapshot so new streets, houses, old_name aliases and POIs
-          # become available without any geocoder call on the phone.
-          "$OSMOSIS" \
-            --rb file=build/offline-map/volyn.osm.pbf \
-            --bounding-box left=25.12 right=25.52 bottom=50.62 top=50.87 completeWays=yes \
+          JAVACMD_OPTIONS=-Xmx2g "$OSMOSIS" --rb file=build/offline-map/volyn.osm.pbf \
+            --mapfile-writer file=build/offline-map/lutsk_area.map type=hd \
+            bbox=50.62,25.12,50.87,25.52 map-start-position=50.7472,25.3254 \
+            map-start-zoom=13 preferred-languages=uk
+          "$OSMOSIS" --rb file=build/offline-map/volyn.osm.pbf \
+            --bounding-box left=25.12 right=25.60 bottom=50.62 top=50.88 completeWays=yes \
             --wx file=build/offline-map/lutsk_area.osm
-          mkdir -p build/offline-map/classes
+          mkdir -p build/offline-map/classes build/offline-map/road-v3
           javac -encoding UTF-8 -d build/offline-map/classes \
             map-tools/BuildAddressIndex.java map-tools/BuildStreetIndex.java
           java -Xmx3g -cp build/offline-map/classes BuildAddressIndex \
             build/offline-map/lutsk_area.osm build/offline-map/lutsk_addresses.tsv
           java -Xmx2g -cp build/offline-map/classes BuildStreetIndex \
             build/offline-map/lutsk_area.osm build/offline-map/lutsk_streets.tsv
-          test "$(stat -c %s build/offline-map/lutsk_addresses.tsv)" -gt 524288
-          test "$(stat -c %s build/offline-map/lutsk_streets.tsv)" -gt 10240
-
-      - name: Create hashes and change statistics manifest
+          python3 taxi-helper/tools/build_lightweight_visual_map.py build \
+            --source build/offline-map/lutsk_area.osm --binary build/offline-map/visual_roads.bin \
+            --manifest build/offline-map/visual-manifest.json
+          python3 taxi-helper/tools/v3_road_artifact.py --osm build/offline-map/lutsk_area.osm \
+            --output build/offline-map/road-v3
+          cp build/offline-map/road-v3/road_graph.bin build/offline-map/
+          cp build/offline-map/road-v3/road_anchor_index.bin build/offline-map/
+          cp build/offline-map/road-v3/manifest.json build/offline-map/road_manifest.json
+      - name: Verify topology and create statistics
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="$(date -u +%Y%m%d-%H%M%S)"
-          GENERATED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          VERSION="$VERSION" GENERATED="$GENERATED" python3 - <<'PY'
-          import hashlib, json, os
+          python3 taxi-helper/tools/build_lightweight_visual_map.py verify \
+            --binary build/offline-map/visual_roads.bin --manifest build/offline-map/visual-manifest.json
+          PYTHONPATH=taxi-helper/tools python3 taxi-helper/tools/v3_road_artifact_verifier.py \
+            --osm build/offline-map/lutsk_area.osm --artifact-dir build/offline-map/road-v3 \
+            --topology-fixture taxi-helper/tools/fixtures/v3_road_topology_cases_stage2.json \
+            --output build/offline-map/road-verification.json
+          python3 - <<'PY'
+          import json
           from pathlib import Path
-
-          root = Path("build/offline-map")
-          names = ["lutsk_area.map", "lutsk_addresses.tsv", "lutsk_streets.tsv"]
-          def rows(path):
-              return set(path.read_text(encoding="utf-8").splitlines()) if path.exists() else set()
-          def file_info(path):
-              return {"size": path.stat().st_size,
-                      "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-
-          addresses = rows(root / "lutsk_addresses.tsv")
-          streets = rows(root / "lutsk_streets.tsv")
-          old_addresses = rows(root / "previous/lutsk_addresses.tsv")
-          old_streets = rows(root / "previous/lutsk_streets.tsv")
-          stats = {
-              "addressPoiRecords": len(addresses),
-              "addressPoiAdded": len(addresses - old_addresses) if old_addresses else 0,
-              "addressPoiRemoved": len(old_addresses - addresses) if old_addresses else 0,
-              "streetSamples": len(streets),
-              "uniqueStreets": len({line.split("\t", 1)[0] for line in streets}),
-              "streetSamplesAdded": len(streets - old_streets) if old_streets else 0,
-              "streetSamplesRemoved": len(old_streets - streets) if old_streets else 0,
-          }
-          manifest = {"format": 2, "version": os.environ["VERSION"],
-                      "generatedAt": os.environ["GENERATED"],
-                      "files": {name: file_info(root / name) for name in names},
-                      "statistics": stats}
-          (root / "map-manifest.json").write_text(
-              json.dumps(manifest, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+          r=Path('build/offline-map')
+          def rows(p): return set(p.read_text(encoding='utf-8').splitlines()) if p.is_file() else set()
+          a,s,oa,os=rows(r/'lutsk_addresses.tsv'),rows(r/'lutsk_streets.tsv'),rows(r/'previous/lutsk_addresses.tsv'),rows(r/'previous/lutsk_streets.tsv')
+          data={'addressPoiRecords':len(a),'addressPoiAdded':len(a-oa) if oa else 0,'addressPoiRemoved':len(oa-a) if oa else 0,'streetSamples':len(s),'uniqueStreets':len({x.split('\t',1)[0] for x in s}),'streetSamplesAdded':len(s-os) if os else 0,'streetSamplesRemoved':len(os-s) if os else 0}
+          (r/'statistics.json').write_text(json.dumps(data),encoding='utf-8')
           PY
-
-      - name: Publish stable GitHub Release assets
+      - name: Build and fail-closed verify format 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release
+          python3 taxi-helper/tools/build_offline_map_manifest_v3.py \
+            --map build/offline-map/lutsk_area.map --addresses build/offline-map/lutsk_addresses.tsv \
+            --streets build/offline-map/lutsk_streets.tsv --visual build/offline-map/visual_roads.bin \
+            --visual-manifest build/offline-map/visual-manifest.json \
+            --road-graph build/offline-map/road_graph.bin \
+            --road-anchors build/offline-map/road_anchor_index.bin \
+            --road-manifest build/offline-map/road_manifest.json \
+            --statistics-json build/offline-map/statistics.json --output build/release \
+            --version "$(date -u +%Y%m%d-%H%M%S)" --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PREVIOUS=(); [ ! -f build/offline-map/previous/lutsk_addresses.tsv ] || PREVIOUS=(--previous build/offline-map/previous)
+          python3 taxi-helper/tools/verify_offline_map_release_v4.py --bundle build/release \
+            "${PREVIOUS[@]}" --output build/release/verification-report.json
+      - name: Publish payload first and activation manifest last
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if ! gh release view offline-map-latest >/dev/null 2>&1; then
-            gh release create offline-map-latest \
-              --title "Latest Taxi Helper offline map" \
-              --notes "Automatically built from the latest OpenStreetMap Volyn extract."
-          fi
-          # Upload the large payload first and the manifest last. A phone that checks during the
-          # short transition will reject a hash mismatch and preserve its current working map.
-          gh release upload offline-map-latest \
-            build/offline-map/lutsk_area.map \
-            build/offline-map/lutsk_addresses.tsv \
-            build/offline-map/lutsk_streets.tsv \
-            --clobber
-          gh release upload offline-map-latest build/offline-map/map-manifest.json --clobber
+          gh release view offline-map-latest >/dev/null 2>&1 || gh release create offline-map-latest \
+            --title "Latest Taxi Helper offline map" --notes "Automatically built and verified."
+          gh release upload offline-map-latest build/release/lutsk_area.map \
+            build/release/lutsk_addresses.tsv build/release/lutsk_streets.tsv \
+            build/release/visual_roads.bin build/release/road_graph.bin \
+            build/release/road_anchor_index.bin build/release/road_manifest.json \
+            build/release/verification-report.json --clobber
+          gh release upload offline-map-latest build/release/map-manifest.json --clobber
