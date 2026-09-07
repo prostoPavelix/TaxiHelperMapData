@@ -1,6 +1,11 @@
 name: Update atomic Taxi Helper map and V3 road bundle
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update-offline-map.yml
+      - map-tools/**
   schedule:
     - cron: "17 3 1 * *"
 concurrency:
