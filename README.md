@@ -17,19 +17,20 @@ data. GitHub Actions publishes a stable `offline-map-latest` release containing:
 
 Source: OpenStreetMap Volyn extract. Generated monthly and on manual workflow dispatch.
 
-Current verified production release: `20260907-215810`. It was built by GitHub Actions run
-`34164856459` from OSM SHA-256
-`21130f856f1a8c7a76ec9d850277ec5016bab7c93315d81d58fe688a8987e7e7` and was successfully
-downloaded, atomically activated and used to rebuild Taxi Helper V3 generation 11 on a real
-phone. See [ARCHITECTURE_AND_RELEASE_UK.md](ARCHITECTURE_AND_RELEASE_UK.md).
+Current public release: format 5, `20260928-222232`, built and published by
+[GitHub Actions run 36491715838](https://github.com/prostoPavelix/TaxiHelperMapData/actions/runs/36491715838)
+from OSM SHA-256 `fda3c4068e87965ec21a209cdab153abc70f95e5db76fd5af0a94a3cdeb2fcc7`.
+The compatible Android APK was installed on the working phone first. The owner deferred
+downloading/activating this new map on the phone to a later test. The previous verified release
+`20260907-215810` was downloaded and activated on a phone; see
+[ARCHITECTURE_AND_RELEASE_UK.md](ARCHITECTURE_AND_RELEASE_UK.md).
 
 The format-5 eleven-file bundle is built from one snapshot. Publication is blocked by address/street coverage
 regressions, missing critical Lutsk street families, topology failures or mixed hashes. The phone
-activates only the whole verified bundle and retains the previous complete version. The current
-production release remains format 4 until the matching Android client has been installed and
-checked on the phone. The `codex/visual-map-bundle` branch runs the entire GitHub build and
-verification without publishing the release. Merging that branch to `main` automatically publishes
-format 5, so merge only after the matching Android version is on the phone.
+activates only the whole verified bundle and retains the previous complete version. The
+`codex/visual-map-bundle` branch was first built and verified twice without publishing. It was
+then fast-forwarded to `main` after the matching Android APK was installed. The phone download
+and activation check remains pending.
 
 The public, standard-library-only builders and fixtures are vendored in `map-tools/`. The
 workflow therefore requires no access token for the private Android source repository and never

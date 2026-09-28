@@ -27,10 +27,11 @@ light map, a small subset of colour/objects, rail and curated labels. This chang
 display zoom, label selection, GPS cells, forecast, routing or learning. The public repository
 contains only OSM-derived tooling and output, no private driving history or sectors.
 
-Rollout order: (1) build and inspect the branch CI without publishing; (2) merge/install the
-matching TaxiHelper Android code and test on the phone; (3) only then merge this map-data branch
-or dispatch the workflow on `main`; (4) check the published manifest and phone download/activation.
-The old Android updater supports formats through 4 and would reject 5, hence early publication
-would suspend map updates on that build. For rollback, republish the prior verified format-4 bundle
-and activation manifest last, or retain the current release until phone validation. The app keeps
-the previously activated bundle if download or validation fails.
+Actual rollout on 2026-09-29: branch CI passed twice without publishing; the compatible APK was
+installed on the Motorola Edge 60 with data preserved and required services verified; this branch
+was fast-forwarded to `main`; publication CI run `36491715838` passed. The public release manifest
+is format 5 version `20260928-222232` with 11 present assets and matching advertised sizes/OSM
+provenance. At the owner's request, the phone map download/activation check is deferred. The old
+Android updater supports formats through 4 and would reject 5. For rollback, republish the prior
+verified format-4 bundle and activation manifest last. The app keeps the previously activated
+bundle if download or validation fails.
