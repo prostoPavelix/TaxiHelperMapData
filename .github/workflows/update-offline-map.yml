@@ -1,8 +1,8 @@
-name: Update atomic Taxi Helper map and V3 road bundle
+name: Update atomic Taxi Helper map and visual bundle
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, codex/visual-map-bundle]
     paths:
       - .github/workflows/update-offline-map.yml
       - map-tools/**
@@ -59,7 +59,18 @@ jobs:
           "$OSMOSIS" --rb file=build/offline-map/volyn.osm.pbf \
             --bounding-box left=25.12 right=25.60 bottom=50.62 top=50.88 completeWays=yes \
             --wx file=build/offline-map/lutsk_area.osm
-          mkdir -p build/offline-map/classes build/offline-map/road-v3
+          mkdir -p build/offline-map/classes build/offline-map/road-v3 build/offline-map/mapsforge-reader
+          for module in mapsforge-core mapsforge-map mapsforge-map-reader; do
+            curl -fL --retry 3 -o "build/offline-map/mapsforge-reader/$module.jar" \
+              "https://repo.maven.apache.org/maven2/org/mapsforge/$module/0.25.0/$module-0.25.0.jar"
+          done
+          READER_CP="$(printf '%s:' build/offline-map/mapsforge-reader/*.jar)"
+          javac -encoding UTF-8 -cp "$READER_CP" -d build/offline-map/classes map-tools/ExportRichMap.java
+          java -Xmx2g -cp "build/offline-map/classes:$READER_CP" ExportRichMap \
+            build/offline-map/lutsk_area.map build/offline-map/rich_context.bin
+          python3 map-tools/build_rich_context_manifest.py build \
+            --binary build/offline-map/rich_context.bin --map build/offline-map/lutsk_area.map \
+            --osm build/offline-map/lutsk_area.osm --manifest build/offline-map/rich_context_manifest.json
           javac -encoding UTF-8 -d build/offline-map/classes \
             map-tools/BuildAddressIndex.java map-tools/BuildStreetIndex.java
           java -Xmx3g -cp build/offline-map/classes BuildAddressIndex \
@@ -69,6 +80,9 @@ jobs:
           python3 map-tools/build_lightweight_visual_map.py build \
             --source build/offline-map/lutsk_area.osm --binary build/offline-map/visual_roads.bin \
             --manifest build/offline-map/visual-manifest.json
+          python3 map-tools/build_lightweight_visual_map.py build --profile minor \
+            --source build/offline-map/lutsk_area.osm --binary build/offline-map/visual_minor_roads.bin \
+            --manifest build/offline-map/minor_manifest.json
           python3 map-tools/v3_road_artifact.py --osm build/offline-map/lutsk_area.osm \
             --output build/offline-map/road-v3
           cp build/offline-map/road-v3/road_graph.bin build/offline-map/
@@ -80,6 +94,11 @@ jobs:
           set -euo pipefail
           python3 map-tools/build_lightweight_visual_map.py verify \
             --binary build/offline-map/visual_roads.bin --manifest build/offline-map/visual-manifest.json
+          python3 map-tools/build_lightweight_visual_map.py verify \
+            --binary build/offline-map/visual_minor_roads.bin --manifest build/offline-map/minor_manifest.json
+          python3 map-tools/build_rich_context_manifest.py verify \
+            --binary build/offline-map/rich_context.bin --map build/offline-map/lutsk_area.map \
+            --osm build/offline-map/lutsk_area.osm --manifest build/offline-map/rich_context_manifest.json
           PYTHONPATH=map-tools python3 map-tools/v3_road_artifact_verifier.py \
             --osm build/offline-map/lutsk_area.osm --artifact-dir build/offline-map/road-v3 \
             --topology-fixture map-tools/v3_road_topology_cases.json \
@@ -93,24 +112,30 @@ jobs:
           data={'addressPoiRecords':len(a),'addressPoiAdded':len(a-oa) if oa else 0,'addressPoiRemoved':len(oa-a) if oa else 0,'streetSamples':len(s),'uniqueStreets':len({x.split('\t',1)[0] for x in s}),'streetSamplesAdded':len(s-os) if os else 0,'streetSamplesRemoved':len(os-s) if os else 0}
           (r/'statistics.json').write_text(json.dumps(data),encoding='utf-8')
           PY
-      - name: Build and fail-closed verify format 4
+      - name: Build and fail-closed verify format 5
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build/release
-          python3 map-tools/build_offline_map_manifest_v4.py \
+          python3 map-tools/build_offline_map_manifest_v5.py \
             --map build/offline-map/lutsk_area.map --addresses build/offline-map/lutsk_addresses.tsv \
             --streets build/offline-map/lutsk_streets.tsv --visual build/offline-map/visual_roads.bin \
             --visual-manifest build/offline-map/visual-manifest.json \
             --road-graph build/offline-map/road_graph.bin \
             --road-anchors build/offline-map/road_anchor_index.bin \
             --road-manifest build/offline-map/road_manifest.json \
+            --minor build/offline-map/visual_minor_roads.bin \
+            --minor-manifest build/offline-map/minor_manifest.json \
+            --rich build/offline-map/rich_context.bin \
+            --rich-manifest build/offline-map/rich_context_manifest.json \
+            --osm build/offline-map/lutsk_area.osm \
             --statistics-json build/offline-map/statistics.json --output build/release \
             --version "$(date -u +%Y%m%d-%H%M%S)" --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           PREVIOUS=(); [ ! -f build/offline-map/previous/lutsk_addresses.tsv ] || PREVIOUS=(--previous build/offline-map/previous)
-          python3 map-tools/verify_offline_map_release_v4.py --bundle build/release \
+          python3 map-tools/verify_offline_map_release_v5.py --bundle build/release \
             "${PREVIOUS[@]}" --output build/release/verification-report.json
       - name: Publish payload first and activation manifest last
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -122,5 +147,7 @@ jobs:
             build/release/lutsk_addresses.tsv build/release/lutsk_streets.tsv \
             build/release/visual_roads.bin build/release/road_graph.bin \
             build/release/road_anchor_index.bin build/release/road_manifest.json \
+            build/release/visual_minor_roads.bin build/release/minor_manifest.json \
+            build/release/rich_context.bin build/release/rich_context_manifest.json \
             build/release/verification-report.json --clobber
           gh release upload offline-map-latest build/release/map-manifest.json --clobber

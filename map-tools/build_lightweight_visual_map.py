@@ -39,6 +39,14 @@ ROAD_CLASSES = {
     "tertiary_link": 3,
 }
 
+# Optional render-only overlay. Keep it separate from the atomically updated major-road
+# bundle: the archived source snapshot can add context without replacing newer phone roads.
+MINOR_ROAD_CLASSES = {
+    "residential": 4,
+    "living_street": 4,
+    "unclassified": 5,
+}
+
 
 @dataclass(frozen=True)
 class Road:
@@ -66,10 +74,10 @@ def project(latitude: float, longitude: float) -> tuple[int, int]:
     )
 
 
-def parse_osm(path: Path) -> tuple[list[Road], dict[str, int], tuple[float, float, float, float]]:
+def parse_osm(path: Path, classes: dict[str, int] = ROAD_CLASSES) -> tuple[list[Road], dict[str, int], tuple[float, float, float, float]]:
     nodes: dict[int, tuple[float, float]] = {}
     raw_ways: list[tuple[int, int, tuple[int, ...]]] = []
-    tag_counts = {tag: 0 for tag in ROAD_CLASSES}
+    tag_counts = {tag: 0 for tag in classes}
     for _, element in ET.iterparse(path, events=("end",)):
         name = _local_name(element.tag)
         if name == "node":
@@ -86,8 +94,8 @@ def parse_osm(path: Path) -> tuple[list[Road], dict[str, int], tuple[float, floa
                     references.append(int(child.attrib["ref"]))
                 elif child_name == "tag" and child.attrib.get("k") == "highway":
                     highway = child.attrib.get("v")
-            if highway in ROAD_CLASSES and len(references) >= 2:
-                raw_ways.append((int(element.attrib["id"]), ROAD_CLASSES[highway], tuple(references)))
+            if highway in classes and len(references) >= 2:
+                raw_ways.append((int(element.attrib["id"]), classes[highway], tuple(references)))
                 tag_counts[highway] += 1
         # Children of a way must remain intact until the enclosing `way` END event. Clearing every
         # `nd`/`tag` here would erase its attributes before the parent can inspect them.
@@ -148,14 +156,14 @@ def read_binary(path: Path) -> dict[str, object]:
         raise ValueError(f"Unsupported lightweight visual-map format {version}")
     if not 1 <= road_count <= 10_000 or not 2 <= declared_points <= 500_000:
         raise ValueError("Implausible lightweight visual-map counts")
-    class_counts = {str(index): 0 for index in range(4)}
+    class_counts = {str(index): 0 for index in range(6)}
     observed_points = 0
     for _ in range(road_count):
         if offset + 4 > len(data):
             raise ValueError("Truncated road header")
         road_class, reserved, point_count = struct.unpack_from(">BBH", data, offset)
         offset += 4
-        if road_class not in range(4) or reserved != 0 or point_count < 2:
+        if road_class not in range(6) or reserved != 0 or point_count < 2:
             raise ValueError("Invalid road entry")
         byte_count = point_count * 8
         if offset + byte_count > len(data):
@@ -176,8 +184,10 @@ def read_binary(path: Path) -> dict[str, object]:
     }
 
 
-def build(source: Path, binary: Path, manifest: Path) -> dict[str, object]:
-    roads, tag_counts, coverage = parse_osm(source)
+def build(source: Path, binary: Path, manifest: Path, profile: str = "main") -> dict[str, object]:
+    if profile not in {"main", "minor"}:
+        raise ValueError(f"Unknown visual-road profile {profile}")
+    roads, tag_counts, coverage = parse_osm(source, MINOR_ROAD_CLASSES if profile == "minor" else ROAD_CLASSES)
     write_binary(binary, roads)
     decoded = read_binary(binary)
     source_hash = sha256(source)
@@ -185,7 +195,7 @@ def build(source: Path, binary: Path, manifest: Path) -> dict[str, object]:
     result = {
         "format_version": FORMAT_VERSION,
         "builder_version": BUILDER_VERSION,
-        "visual_spec_version": VISUAL_SPEC_VERSION,
+        "visual_spec_version": VISUAL_SPEC_VERSION if profile == "main" else "lutsk-residential-visual-overlay-v1",
         "grid_spec_version": GRID_SPEC_VERSION,
         "osm_snapshot_id": source_hash[:16],
         "osm_snapshot_sha256": source_hash,
@@ -202,7 +212,8 @@ def build(source: Path, binary: Path, manifest: Path) -> dict[str, object]:
             "point_count": decoded["point_count"],
             "class_counts": decoded["class_counts"],
             "included_highway_tags": sorted(tag for tag, count in tag_counts.items() if count),
-            "excluded": ["buildings", "house_numbers", "poi", "street_labels", "minor_roads"],
+            "excluded": (["buildings", "house_numbers", "poi", "street_labels", "minor_roads"]
+                         if profile == "main" else ["buildings", "house_numbers", "poi", "street_labels", "service", "track", "footway"]),
         },
         "artifact": {
             "name": binary.name,
@@ -247,11 +258,12 @@ def main() -> None:
     build_parser.add_argument("--source", type=Path, required=True)
     build_parser.add_argument("--binary", type=Path, required=True)
     build_parser.add_argument("--manifest", type=Path, required=True)
+    build_parser.add_argument("--profile", choices=("main", "minor"), default="main")
     verify_parser = subparsers.add_parser("verify")
     verify_parser.add_argument("--binary", type=Path, required=True)
     verify_parser.add_argument("--manifest", type=Path, required=True)
     args = parser.parse_args()
-    result = build(args.source, args.binary, args.manifest) if args.command == "build" \
+    result = build(args.source, args.binary, args.manifest, args.profile) if args.command == "build" \
         else verify(args.binary, args.manifest)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
