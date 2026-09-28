@@ -67,6 +67,10 @@ def verify(root: Path, previous: Path | None = None) -> dict[str, object]:
         details = inspect_rich(root / "rich_context.bin")
         if rich.get("feature_count") != details["feature_count"] or rich.get("point_count") != details["point_count"]:
             failures.append("RICH_STRUCTURE")
+        # Prevent a valid but visually empty export from replacing the accepted Lutsk map.
+        for kind, minimum in {"1": 5, "2": 40, "5": 15, "7": 50, "9": 30, "11": 200}.items():
+            if details["feature_counts"].get(kind, 0) < minimum:
+                failures.append(f"RICH_COVERAGE:{kind}")
     except ValueError:
         failures.append("RICH_STRUCTURE")
     if road.get("routing_profile_version") != "passenger-car-static-v1":

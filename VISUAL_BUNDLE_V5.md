@@ -15,7 +15,8 @@ could still show stale APK geometry. Format 5 fixes this by adding four release 
 The original seven files remain required. `build_offline_map_manifest_v5.py` rejects a differing
 OSM SHA in the visual, minor or road manifests, mismatched nested binary specs, and a rich source
 map hash different from the release map. `verify_offline_map_release_v5.py` repeats the relevant
-checks on the assembled release and retains address regression and road topology gates. GitHub
+checks on the assembled release, rejects a valid but nearly empty colour/label extraction,
+and retains address regression and road topology gates. GitHub
 Actions assembles from one downloaded PBF, verifies, uploads payloads first, and uploads
 `map-manifest.json` last. The Android updater checks SHA/size/format for every file before atomic
 activation with `.previous` rollback. It uses format-5 visual layers only from the activated bundle;
