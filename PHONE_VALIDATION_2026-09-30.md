@@ -1,0 +1,13 @@
+# Completed format-5 map update validation on phone — 2026-09-30
+
+The Motorola Edge 60 (Android 16/API 36) downloaded and activated public release **20260928-222232**, format **5**, through the normal “Update offline map” button. The previously installed format-4 release was 20260907-215810. The compatible APK installed on September 29 was reused. No additional production-code fix or APK installation was needed.
+
+Evidence: the app's report and `offline_map_update` preferences agree on format/version/OSM SHA `fda3c4068e87965ec21a209cdab153abc70f95e5db76fd5af0a94a3cdeb2fcc7`. The report contains 103348 address/POI rows, 729 streets and 6338 samples. Every one of the **11 active phone files** was independently SHA-256 compared against the public release manifest: 11/11 match. There are no pending files. The seven previous format-4 payloads remain as `.previous`; the four new visual payloads had no previous installed counterparts.
+
+Actual before/after screenshots of the same overview were inspected. Selected colour/landmark context, main/local roads, along-road labels, sector outlines/names/percentages and GPS-cell fills remain visible in the accepted style. Different OSM snapshots need not be pixel-identical. Background/foreground return and closing/reopening the map retained the layers. No new Taxi Helper crash appeared in the crash buffer during the validation window. A repeated update request displayed “Map already up to date · 20260928-222232” without staging or reactivation.
+
+Accessibility remained enabled and portrait settings were verified as 0/0. Shizuku was absent when checked at the end; `tools/ensure_shizuku.ps1` started it and a PID was verified. There is no evidence that map updating caused its absence; map updating is independent of Shizuku. Location remained pending indoors and did not affect map validation.
+
+This completes GitHub → in-app download → integrity/format check → atomic activation → rendering/reopening validation. Deliberate corruption/power-loss testing was not performed on the working phone; filesystem rollback was already covered by local tests. RAM/CPU, every zoom level and every city feature were not measured. Forecast formulas, cell policies, sector polygons and historical records were not edited. Updated public address indexes are part of the normal bundle.
+
+Keep all 11 format-5 payloads bound to one OSM source, upload payload first and activation manifest last, and synchronize the vendored rich/minor exporters when changing visual filters. Local screenshots and the compact hash report reside in ignored `build/map-phone-validation-20260930/`; private device artefacts are not committed. The previous “phone validation deferred” state is superseded by this report.

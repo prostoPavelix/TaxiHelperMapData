@@ -31,7 +31,7 @@ Actual rollout on 2026-09-29: branch CI passed twice without publishing; the com
 installed on the Motorola Edge 60 with data preserved and required services verified; this branch
 was fast-forwarded to `main`; publication CI run `36491715838` passed. The public release manifest
 is format 5 version `20260928-222232` with 11 present assets and matching advertised sizes/OSM
-provenance. At the owner's request, the phone map download/activation check is deferred. The old
+provenance. Phone validation completed September 30: 11/11 hashes match, the accepted style survives reopening, and repeat update reports the current version. See [evidence and limits](PHONE_VALIDATION_2026-09-30.md). The old
 Android updater supports formats through 4 and would reject 5. For rollback, republish the prior
 verified format-4 bundle and activation manifest last. The app keeps the previously activated
 bundle if download or validation fails.
