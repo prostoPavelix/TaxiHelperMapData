@@ -1,0 +1,167 @@
+{
+  "contract": "GEO4_PUBLIC_COMPILER_SOURCE_LOCK_1",
+  "source_repository": "prostoPavelix/TaxiHelper",
+  "source_ref": "a49142154f1166f8d7af014c646acbc3e2fc0182",
+  "files": [
+    {
+      "path": "docs/taxihelper_2_0/geo1/AOI_EVIDENCE.json",
+      "bytes": 2104,
+      "sha256": "8c87d5442dea38f94377abbfe2d305bfefe5c265751fb6a65e9581437da7addd"
+    },
+    {
+      "path": "docs/taxihelper_2_0/geo1/AOI_PROPOSAL.geojson",
+      "bytes": 1850,
+      "sha256": "6b67b8215b2e2d04358cef3f287c273cb8d559c494aeacda7fdfd51a70db95e1"
+    },
+    {
+      "path": "taxihelper2_workspace/app/src/main/java/com/example/bolthelper/sep1/S1SectorUniverse.kt",
+      "bytes": 2676,
+      "sha256": "7a5b9f18c0766b87c09933f48462bafb683b87919a24494cfdee783b36710e7a"
+    },
+    {
+      "path": "taxihelper2_workspace/app/src/main/packaged-assets/lutsk-sectors.gpkg",
+      "bytes": 110592,
+      "sha256": "19a75b5a16f708c400cefafe8189519936a5545e73142bb8bd834bf065a9709e"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/addr2/core.py",
+      "bytes": 6553,
+      "sha256": "5c7cda8e6eb6c6731615cbb8c7f058d4777cf9eba062eb11b1fcf3ccdf0c37e1"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/INCLUSION_POLICY.json",
+      "bytes": 2607,
+      "sha256": "2ed8a5e6de8e804d0bda4c39640a29b3b6e8bb91ece8057ff7f20e5d3a65aa6a"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/acquire.py",
+      "bytes": 2381,
+      "sha256": "ae701eff7bd80ace278540f8290ff5e09ff6448d7d9930af055f62a4786f42f3"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/address_ledger.py",
+      "bytes": 2921,
+      "sha256": "63a4e15f1e766345871d7306db9496111c50787888ff44d5eef59292ed711203"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/build.py",
+      "bytes": 18694,
+      "sha256": "8d438feb25d610ab46f3a053b1a1818a7b3306c793bb8182619960a2f5241216"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/common.py",
+      "bytes": 2313,
+      "sha256": "3958520f9abcbc68abaa643b5426a70a31b693e5b5cff8c090703679b88e8983"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/extend_names.py",
+      "bytes": 4513,
+      "sha256": "63c439cf3c24cbbdcee4c72e3d2eec1f3c710a8a11182346677130af36753dba"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/extract.py",
+      "bytes": 5129,
+      "sha256": "8618f7b81c5d25a5e8736357f3a2843f61ea62c03df4ab04c6cf72bfa8e4be06"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/fast_verify.py",
+      "bytes": 8080,
+      "sha256": "66404858ea7fa2e8eb42906d66fbd9f48d5ba08d2adbf862940fd4ed5a6a3fc6"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/fetch_supplement.py",
+      "bytes": 1883,
+      "sha256": "647f6cd7e7c6c971a4e1a04b4178dc98ad840523f9084a5ee08f7df15487def7"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/name_fields.py",
+      "bytes": 1402,
+      "sha256": "5333e5d9fb13da643ef8bd516d223271d972c09d265e6faee32508220d82469b"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/performance.py",
+      "bytes": 3544,
+      "sha256": "499733269db5acc7cb64b8e790bde41a812bc351fc080eea6811b580b09a2934"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/reader.py",
+      "bytes": 3048,
+      "sha256": "9ce5bb9648a42493e7bd3275eca273fa0a1ede40d4ed974d7e5bac41d797538b"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/report.py",
+      "bytes": 11430,
+      "sha256": "244d88f2d360c0267789478d60c18ab5219c682652c855d0596a352789bf3a59"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/requirements.txt",
+      "bytes": 144,
+      "sha256": "ac75609c3e5f3bb0f1c3aa6913a63da0f59e568c69b4f51d53603e6b4626ba24"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/supplement.py",
+      "bytes": 6073,
+      "sha256": "2488c0471f5f79c10fed1d39580897417f97ca201dc4ace3345771368f2f8277"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/test_contract.py",
+      "bytes": 4803,
+      "sha256": "b1ddd9bb145447f5b252652f44a71c13e0edd94ea56c5e316fd03cb6a5d60488"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/verify.py",
+      "bytes": 6470,
+      "sha256": "069c8cf482a804c9458333e9692272ad830a6a362b9c6f919d8f97717f03ab5b"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo2/visual.py",
+      "bytes": 2020,
+      "sha256": "1a514df8458becc590bef805d7834b72c440eb4b1946b1a636b96bd6be98a71e"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/acquire_dated.py",
+      "bytes": 2701,
+      "sha256": "e1517cc5ac213a6f2acda3413072c1e1c8c2a032a7b4c1227f7a38d34d4c33f3"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/additional_input.py",
+      "bytes": 4761,
+      "sha256": "571e33e860b07dc2f3b57f449867e132dacadefe0e4bafac7c770e28366a2dc2"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/compiler.py",
+      "bytes": 5032,
+      "sha256": "dbb0a704573d4b3bca862ccee3f9eae44359c315e49875a099c1f711ce3603d8"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/portable_supplement.py",
+      "bytes": 2184,
+      "sha256": "78f403c33bec9648d8a154b8746db7f9bb70ba760d23ad97b724fef7728dd5c2"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/prepare.py",
+      "bytes": 4141,
+      "sha256": "b74d9fa3172ad572a32b8ee0ca79c237edc53551dffbb93acfbdee80b8b4c31f"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/transport.py",
+      "bytes": 11567,
+      "sha256": "cc2ed1fae8e8205267ee744e1706565a067d7e11693f1d2b838281be2bac70d1"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/geo4_build/unpack_input.py",
+      "bytes": 2959,
+      "sha256": "e43194ad8693e133e4248161c5a725c5dcd7ed2e97fbc39a058d0e52d79257ec"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/locality_probe/analyze.py",
+      "bytes": 9244,
+      "sha256": "256363993c73552f538c2e955d3bf2203d64d23aca874106d5962abf485d5736"
+    },
+    {
+      "path": "taxihelper2_workspace/tools/resolve1/compile_evidence.py",
+      "bytes": 9138,
+      "sha256": "aca55a281dd2edeec97b280d8aa1bca6bf2ade151fbb673548b8f33ebca84f48"
+    }
+  ]
+}

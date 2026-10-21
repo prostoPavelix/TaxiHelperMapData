@@ -1,0 +1,50 @@
+package com.example.bolthelper.sep1
+
+/** Frozen 41 CAL3P sectors plus the missing-pickup denominator category. */
+object S1SectorUniverse {
+ val sectors:List<String> = java.util.Collections.unmodifiableList(listOf(
+  "sector:qgis-1-f6bd0ec3-ce2e-4337-94e2-21c1b4fd3fd7",
+  "sector:qgis-2-4b48ed50-b49c-443b-b09c-93dfd16cc760",
+  "sector:qgis-3-7e9dfd9c-740b-4014-be59-36e1dfadb17a",
+  "sector:qgis-4-9fb17c9e-9d54-4f10-a0cb-4cc4c9b2df92",
+  "sector:qgis-5-26563f4e-bdae-483e-88e9-b0e69e6520b6",
+  "sector:qgis-6-fa66bf80-05fc-46ba-8678-8b3e5cdb25d6",
+  "sector:qgis-7-f1cf9ba8-bf41-44d3-87ca-3a7157c10649",
+  "sector:qgis-8-c6d34aa5-b220-4a32-9dd6-10093ed3f057",
+  "sector:qgis-9-e7c4bfca-9e38-4a96-98ef-153a9015c92e",
+  "sector:qgis-10-d2e4360a-bd01-4801-b90b-02c55486978e",
+  "sector:qgis-11-88f3f9a8-c7b7-46c4-90bd-ed3c874a4e7d",
+  "sector:qgis-12-4a4ae36d-8b21-4ab5-aa80-192ef90b73b5",
+  "sector:qgis-13-520e2fb6-31cd-440c-a1a8-1921da2b6c8e",
+  "sector:qgis-14-2dc5348b-d490-4935-b4eb-28d7908cafba",
+  "sector:qgis-15-42254c11-2d0a-423b-af88-676bcd045958",
+  "sector:qgis-16-4a62eeb9-a245-4714-b63c-a91ff7e0ca3e",
+  "sector:qgis-17-0ace2827-726a-4b1c-9896-79a0c1540b07",
+  "sector:qgis-18-e411b144-d425-44f8-b685-6e896c3e6a5c",
+  "sector:qgis-19-709beacc-5db8-4f6c-ba16-a0f17ad5b6f6",
+  "sector:qgis-20-5d70661b-980b-4457-87a2-e1959a05c77a",
+  "sector:qgis-21-983757db-8d67-425e-a9c5-a8c72364f4d7",
+  "sector:qgis-22-7c789e15-fd4c-4680-8e16-6d10c1b10c7d",
+  "sector:qgis-23-b811ee87-f51a-4414-bd23-223f6ef6b7b2",
+  "sector:qgis-24-8e965707-8ea2-41df-a9df-024d36a85101",
+  "sector:qgis-25-2011219a-349b-4e1b-8635-197527ae8b55",
+  "sector:qgis-26-521bc5c3-5b81-405a-b0e0-a0c7e5c94159",
+  "sector:qgis-27-108bbcdf-b030-430a-9180-cb70cd560396",
+  "sector:qgis-28-84874259-51cb-44b0-aa5f-f0a742c5e29c",
+  "sector:qgis-29-37fa3f78-4036-44cc-bfe3-7717b543544d",
+  "sector:qgis-30-4cfa3092-7513-4e4d-a0fd-5893e9238530",
+  "sector:qgis-31-6c4b2734-1ca5-4a52-95dc-15b5d9da7eec",
+  "sector:qgis-32-d42c396e-3395-4bd2-9ca0-b45c7c4e2bbb",
+  "sector:qgis-33-4f11068a-2e7e-43f7-8756-2e7708e0a0f2",
+  "sector:qgis-34-f4e92c67-ae1c-4da9-b244-291624413564",
+  "sector:qgis-35-3422a176-8406-4572-9689-a07f745e1b83",
+  "sector:qgis-36-a91c69ff-d37c-4025-99bd-51b782b66e0b",
+  "sector:qgis-37-a1b123c3-afab-4753-9bed-6192be214056",
+  "sector:qgis-38-aa133875-f596-4164-bc31-c944908beec0",
+  "sector:qgis-39-80dfcf70-fdfd-4259-886b-50a03ce1566d",
+  "sector:qgis-40-91c07ecf-4547-4dcb-adc9-e0eb5a8885a8",
+  "sector:qgis-41-b37d6343-ba8d-4721-b263-c6578caa9453",
+  "UNKNOWN_PICKUP"
+ ))
+ fun requireCompatible(actual:List<String>) { require(actual==sectors) { "SECTOR_UNIVERSE_INCOMPATIBLE" } }
+}

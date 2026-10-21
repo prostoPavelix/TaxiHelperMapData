@@ -1,0 +1,75 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "role": "working_search_envelope",
+        "status": "PROPOSED_NOT_ACTIVATED",
+        "basis": "Envelope of frozen41 vertices + every ADDR2 searchable source coordinate + old XML bounds when declared; no radius"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              25.120334867999997,
+              50.620122200000004
+            ],
+            [
+              25.58692216873169,
+              50.620122200000004
+            ],
+            [
+              25.58692216873169,
+              50.86776444444444
+            ],
+            [
+              25.120334867999997,
+              50.86776444444444
+            ],
+            [
+              25.120334867999997,
+              50.620122200000004
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "role": "dependency_context_envelope",
+        "status": "PROPOSED_NOT_ACTIVATED",
+        "basis": "Working envelope union captured18 settlement geometries, expanded to full existing2800m cells; logical dependency closure is not limited by this polygon"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              25.08353333218458,
+              50.60748984615736
+            ],
+            [
+              25.600309771674908,
+              50.60748984615736
+            ],
+            [
+              25.600309771674908,
+              50.88417095366618
+            ],
+            [
+              25.08353333218458,
+              50.88417095366618
+            ],
+            [
+              25.08353333218458,
+              50.60748984615736
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

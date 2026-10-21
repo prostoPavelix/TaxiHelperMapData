@@ -1,0 +1,12 @@
+{
+  "contract": "GEO4_PRODUCTION_TRUST_1",
+  "algorithm": "Ed25519",
+  "key_id": "geo4-production-20261021-90eb66322504",
+  "public_key_raw_base64": "5hPi84M8GNAu4Pi49iSp8Fx89sWbrv8k7le0pNYSG/M=",
+  "public_key_raw_hex": "e613e2f3833c18d02ee0f8b8f624a9f05c7cf6c59baeff24ee57b4a4d6121bf3",
+  "fingerprint_algorithm": "SHA256_OF_32_RAW_PUBLIC_BYTES",
+  "fingerprint_sha256": "90eb6632250452c96336cebe528a1bf8c9d71a421da0813cfa35df9386302383",
+  "private_key_format": "PKCS8_PEM_UNENCRYPTED_ENVIRONMENT_SECRET",
+  "manifest_signature_domain": "TaxiHelper-GEO4-MANIFEST-1\\0",
+  "channel_signature_domain": "TaxiHelper-GEO4-CHANNEL-1\\0"
+}

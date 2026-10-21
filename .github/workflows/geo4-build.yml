@@ -1,0 +1,121 @@
+name: GEO4 manual first-install build and protected publication
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: Reviewed pinned input configuration
+        type: choice
+        options: [osm261019.json]
+        default: osm261019.json
+      expected_channel:
+        description: First production install requires ABSENT
+        type: choice
+        options: [ABSENT]
+        default: ABSENT
+permissions:
+  contents: read
+concurrency:
+  group: geo4-production-single-publication
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'prostoPavelix/TaxiHelperMapData' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/geo4-publication' && github.actor == 'prostoPavelix'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GEO4_EXPECTED_CHANNEL: ${{ inputs.expected_channel }}
+      GEO4_ROOT: ${{ runner.temp }}/geo4-build
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - name: Start whole-job resource sampling
+        run: python geo4-tools/runner.py start "$GEO4_ROOT"
+      - name: Check identities and download small public input capsules first
+        run: python geo4-tools/stage5.py prepare --root "$GEO4_ROOT" --config '${{ inputs.config }}'
+      - name: Reuse accepted SDK-only runner cleanup
+        run: python geo4-tools/runner.py cleanup "$GEO4_ROOT"
+      - name: Unchanged 14 GiB build admission
+        run: python geo4-tools/runner.py admit "$GEO4_ROOT" build
+      - name: Install pinned accepted compiler dependencies
+        run: python -m pip install --disable-pip-version-check -r geo4-tools/source/taxihelper2_workspace/tools/geo2/requirements.txt
+      - name: One source master mobile sidecar verification and full packing
+        run: python geo4-tools/stage5.py build --root "$GEO4_ROOT" --config '${{ inputs.config }}'
+      - name: Retain verified publication bundle
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-verified-bundle-${{ github.run_id }}
+          path: ${{ runner.temp }}/geo4-build/bundle/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Finish resource sampling and enforce reserve
+        if: always()
+        run: python geo4-tools/runner.py finish "$GEO4_ROOT"
+      - name: Retain short diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-build-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/geo4-build/*RECEIPT.json
+            ${{ runner.temp }}/geo4-build/PRECHECK.json
+            ${{ runner.temp }}/geo4-build/ADMISSION.json
+            ${{ runner.temp }}/geo4-build/SDK_CLEANUP.json
+            ${{ runner.temp }}/geo4-build/FAILURE.json
+            ${{ runner.temp }}/geo4-build/phase.json
+            ${{ runner.temp }}/geo4-build/candidate/PHASE_*.json
+          retention-days: 14
+  publish:
+    needs: build
+    if: github.repository == 'prostoPavelix/TaxiHelperMapData' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/geo4-publication' && github.actor == 'prostoPavelix'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: geo4-production
+    permissions:
+      contents: write
+    env:
+      GEO4_EXPECTED_CHANNEL: ${{ inputs.expected_channel }}
+      GEO4_ROOT: ${{ runner.temp }}/geo4-publication
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - name: Start publication resource sampling
+        run: python geo4-tools/runner.py start "$GEO4_ROOT"
+      - name: Publication artifact admission before download
+        run: python geo4-tools/runner.py admit "$GEO4_ROOT" publish
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: geo4-verified-bundle-${{ github.run_id }}
+          path: ${{ runner.temp }}/geo4-publication/bundle/
+      - name: Install signing and independent verification implementations
+        run: python -m pip install --disable-pip-version-check cryptography==50.0.2 PyNaCl==1.6.2 cffi==2.1.1 pycparser==3.11
+      - name: Verify closure sign publish public readback then signed channel
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GEO4_SIGNING_KEY_PEM: ${{ secrets.GEO4_SIGNING_KEY_PEM }}
+          GEO4_SIGNING_KEY_ID: ${{ vars.GEO4_SIGNING_KEY_ID }}
+        run: python geo4-tools/stage5.py publish --root "$GEO4_ROOT" --config '${{ inputs.config }}'
+      - name: Finish publication sampling and enforce reserve
+        if: always()
+        run: python geo4-tools/runner.py finish "$GEO4_ROOT"
+      - name: Retain publication diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-publication-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/geo4-publication/*RECEIPT.json
+            ${{ runner.temp }}/geo4-publication/ADMISSION.json
+            ${{ runner.temp }}/geo4-publication/FAILURE.json
+            ${{ runner.temp }}/geo4-publication/phase.json
+          retention-days: 14

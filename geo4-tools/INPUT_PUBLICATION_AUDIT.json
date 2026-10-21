@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "scope": "GEOGRAPHIC_INPUT_PUBLICATION_ALLOWLIST_ONLY",
+  "capsule_entries": 271,
+  "exact_manifest_dependency_allowlist": true,
+  "geographic_sqlite_tables_only": true,
+  "phone_or_personal_tables": false,
+  "credential_pattern_scan": "PASS",
+  "historical_supplement": "OSM_GEOGRAPHIC_XML_ONLY",
+  "original_passports_preserved": true,
+  "SHA_pins_reused_and_verified": true
+}

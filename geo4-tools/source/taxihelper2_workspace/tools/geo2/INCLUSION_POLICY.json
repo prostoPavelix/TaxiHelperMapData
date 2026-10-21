@@ -1,0 +1,14 @@
+{
+ "policy":"GEO2_SEARCH_COVERAGE_V2",
+ "fixed_before_build":true,
+ "scope":"Approved GEO1 working AOI, crossing/enclosing OSM geometry and transitive dependencies; all preserved Visicom objects including unknown/outside coordinates retained with explicit dispositions",
+ "searchable_text":"Every non-source:* field with a colon segment name or *_name (including full_name, sorting_name, old_alt_name, reg_name, bridge:name, seamark:name, disused:name), plus name_*/alt_name*/old_name*/official_name*/short_name*/loc_name*/int_name*/brand/brand:*/operator/operator:*/ref and addr:* or contact:street/housenumber/city/postcode and structured full address variants. source:* name fields are provenance, noname is a boolean flag, geonames:id is an identifier; their raw values remain local details. Preserve original text/provenance. Empty/non-alphanumeric values have explicit exclusion ledger entries and local alias details. Semicolon-separated alternatives expose each nonblank component as well as original.",
+ "revision_reason":"V2 includes additional source name fields found by independent raw-tag inventory before performance measurement; V1 was not accepted as complete",
+ "candidate_identity":"Object plus independent source-coordinate/geometry representative variant, never alias count. Missing coordinates yield one UNKNOWN_LOCATION candidate. Geometry representative is explicitly labelled and never an invented confirmed address point.",
+ "include":"Unknown locality, weight, geometry, conflict and automatic-eligibility state do not remove usable search keys. Every alias maps to every independent candidate of its object. Preserve raw-only text/ID even when no coordinates.",
+ "detail_only":"Source objects/members/geometry/tags lacking useful nonblank search text remain local details if required by searchable objects or geographic context; structural nodes/ways may be scoped out of phone with concrete master accounting reason.",
+ "exclusions":"Only proven outside AOI with no selected dependency, unusable empty text, or structural/non-address metadata. Size, old resolver support and visual omission are never exclusion reasons.",
+ "normalizer":"GEO2_NFKC_CASEFOLD_ALNUM_V1; Unicode NFKC+casefold; non-alphanumeric separators collapse; original aliases preserved",
+ "dedup":"Exact duplicate alias text/provenance postings may share same candidate mapping; independent coordinates never merge solely by label. All original source IDs/observations retained.",
+ "automatic_resolution":"No ranking/nearest/fuzzy/majority/RESOLVE1; geographic eligibility independent from search inclusion"
+}

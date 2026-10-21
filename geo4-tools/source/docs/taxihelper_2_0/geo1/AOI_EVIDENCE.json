@@ -1,0 +1,106 @@
+{
+  "status": "PROPOSAL_NOT_COVERAGE_CERTIFICATE",
+  "sector_bbox": [
+    25.17457847842562,
+    50.6650973266663,
+    25.562221663161658,
+    50.84841699520803
+  ],
+  "searchable_source_coordinate_count": 131741,
+  "searchable_bbox": [
+    25.120334867999997,
+    50.620122200000004,
+    25.58692216873169,
+    50.86776444444444
+  ],
+  "old_xml_bounds": null,
+  "working_bbox": [
+    25.120334867999997,
+    50.620122200000004,
+    25.58692216873169,
+    50.86776444444444
+  ],
+  "context_bbox": [
+    25.08353333218458,
+    50.60748984615736,
+    25.600309771674908,
+    50.88417095366618
+  ],
+  "settlement_roots": [
+    {
+      "id": "1951964",
+      "name": "Луцьк"
+    },
+    {
+      "id": "2582431",
+      "name": "Липини"
+    },
+    {
+      "id": "4258171",
+      "name": "Прилуцьке"
+    },
+    {
+      "id": "4272647",
+      "name": "Забороль"
+    },
+    {
+      "id": "4275829",
+      "name": "Зміїнець"
+    },
+    {
+      "id": "4275838",
+      "name": "Тарасове"
+    },
+    {
+      "id": "4281438",
+      "name": "Боратин"
+    },
+    {
+      "id": "4277265",
+      "name": "Полонка"
+    },
+    {
+      "id": "10322850",
+      "name": "Рованці"
+    },
+    {
+      "id": "15611624",
+      "name": "Підгайці"
+    },
+    {
+      "id": "18113288",
+      "name": "Струмівка"
+    },
+    {
+      "id": "18690439",
+      "name": "Струмівка"
+    },
+    {
+      "id": "9825065",
+      "name": "Гаразджа"
+    },
+    {
+      "id": "10301738",
+      "name": "Небіжка"
+    },
+    {
+      "id": "5950582",
+      "name": "Рокині"
+    },
+    {
+      "id": "5995781",
+      "name": "Липляни"
+    },
+    {
+      "id": "4779733",
+      "name": "Ківерці"
+    },
+    {
+      "id": "4492385",
+      "name": "Жидичин"
+    }
+  ],
+  "no_radius": true,
+  "phone_scope": "Working envelope plus retained boundary-crossing objects/dependencies; not whole Ukraine",
+  "missing_inputs": "No current owner trip extents read; AOI proposal needs review and future boundary closure validation"
+}

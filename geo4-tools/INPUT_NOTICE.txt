@@ -1,0 +1,4 @@
+GEO4 source inputs, not a phone backup or release.
+OpenStreetMap contributors: OSM geographic material, ODbL1.0, https://www.openstreetmap.org/copyright
+Additional geographic source material: additional_private_map_data, owner-supplied original Visicom exports and ADDR2 geographic closure. Original raw bytes, names, passports and source provenance are retained in the capsule; no new licensing grant is implied by repackaging.
+Historical OSM API supplement has its own capture epochs; it is not relabelled as the dated PBF snapshot. No personal history, manual/IGNORE/learned rules, phone GPS logs, credentials or backups are input sources.
