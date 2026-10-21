@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "tool": "rhysd/actionlint",
+  "version": "v1.7.12",
+  "distribution_sha256": "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9",
+  "scope": "new workflow only; expression contexts, syntax, action inputs",
+  "shellcheck": "not installed; commands are fixed single Python invocations",
+  "fixed": "job env uses permitted github.workspace context; runner.temp is step-only",
+  "hosted_validation_failures": {
+    "runs": [
+      39656899642,
+      39656900074
+    ],
+    "jobs_started": 0,
+    "expensive_build_started": false
+  }
+}
