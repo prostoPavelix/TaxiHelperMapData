@@ -8,7 +8,7 @@ HERE=Path(__file__).resolve().parent
 SOURCE=HERE/'source'
 TOOLS=SOURCE/'taxihelper2_workspace/tools/geo4_build'
 sys.path.insert(0,str(TOOLS))
-from transport import canonical,digest,validate,reconstruct,sign,DOMAIN,BLOCK
+from transport import canonical,digest,validate,reconstruct,sign,DOMAIN,BLOCK,component
 REPO='prostoPavelix/TaxiHelperMapData'
 CHANNEL='geo4-channel';CHANNEL_FILE='geo4/channels/stable.json'
 CHANNEL_DOMAIN=b'TaxiHelper-GEO4-CHANNEL-1\0'
@@ -136,7 +136,7 @@ def full_component(path,role,out,version=''):
  # mandatory full. No fictional predecessor, packs, or advertised compact route is produced.
  return {'role':role,'version':version,'raw_bytes':total,'raw_sha256':h,'base_bytes':total,'base_sha256':h,'packs':[],'chunks':chunks,'full':{'name':target.name,'bytes':encoded,'sha256':enc.hexdigest(),'codec':'zlib'}}
 
-def package(c,out,sequence):
+def package(c,out,sequence,previous=None):
  for n in ['VERIFICATION.json','INGESTION.json','ADDRESS_COVERAGE.json','NAME_FIELD_AUDIT.json']:
   if read(c/n)['status']!='PASS':raise ValueError('SOURCE_PROOF_FAILED')
  if read(c/'CLOSURE_PRIVATE.json')['reference_missing_count']!=0:raise ValueError('SOURCE_CLOSURE')
@@ -146,7 +146,8 @@ def package(c,out,sequence):
  compiler={k:v['sha256'] for k,v in pins.items() if k.startswith('compiler:') or k=='contract:compile_evidence.py'}
  compiler.update({'compiler_dependency:'+p.name:sha(p) for p in [SOURCE/'taxihelper2_workspace/tools/locality_probe/analyze.py',SOURCE/'taxihelper2_workspace/tools/addr2/core.py',SOURCE/'taxihelper2_workspace/app/src/main/java/com/example/bolthelper/sep1/S1SectorUniverse.kt']})
  identity={'source_sha256':pins['dated_osm']['sha256'],'additional_sha256':pins['additional_manifest']['sha256'],'aoi_sha256':pins['aoi']['sha256'],'sector_sha256':side['sector_sha256'],'compiler_sha256':digest(canonical(compiler)),'toolchain_sha256':digest(canonical(cfg['toolchain']))}
- components=[full_component(c/'mobile.sqlite','base',out,mb['revision']),full_component(c/'resolve1/evidence.sqlite','resolver',out)]
+ components=[full_component(c/'mobile.sqlite','base',out,mb['revision']),full_component(c/'resolve1/evidence.sqlite','resolver',out)] if previous is None else [
+  component(previous/'mobile.sqlite',c/'mobile.sqlite','base',out,mb['revision'])[0],component(previous/'resolve1/evidence.sqlite',c/'resolve1/evidence.sqlite','resolver',out)[0]]
  if components[0]['raw_sha256']!=mb['sha256'] or components[1]['raw_sha256']!=side['sha256']:raise ValueError('COMPLETED_INPUT_CHANGED')
  proof={'contract':'GEO4_SOURCE_TO_PHONE_PROOF_1','status':'PASS','logical_identity':digest(canonical(identity)),'base_sha256':mb['sha256'],'base_version':mb['revision'],'resolver_sha256':side['sha256'],'raw_to_master':read(c/'INGESTION.json'),'master_to_mobile':read(c/'VERIFICATION.json'),'postal_units':read(c/'ADDRESS_COVERAGE.json'),'name_fields':read(c/'NAME_FIELD_AUDIT.json'),'source_epoch':read(c/'EXTRACTION.json')['header']}
  save(out/'completeness.json',proof)
@@ -207,8 +208,8 @@ def upload(release,path,token):
   return j
  finally:conn.close()
 
-def publish(root,cfg):
- phase(root,'PUBLICATION_VERIFY_BUNDLE');guard(root);bundle=root/'bundle';m=verify_bundle(bundle)
+def publish(root,cfg,bundle_verifier=verify_bundle,with_summary=False):
+ phase(root,'PUBLICATION_VERIFY_BUNDLE');guard(root);bundle=root/'bundle';m=bundle_verifier(bundle)
  if m['identity']['source_sha256']!=cfg['osm']['sha256'] or read(bundle/'BUILD_RECEIPT.json').get('config_sha256')!=digest(canonical(cfg)):raise ValueError('CONFIG_SOURCE_BINDING')
  expected=os.environ.get('GEO4_EXPECTED_CHANNEL','ABSENT');token=os.environ['GITHUB_TOKEN']
  prior=api('git/ref/heads/'+CHANNEL,token=token);prior_id=prior['object']['sha'] if prior else 'ABSENT'
@@ -224,7 +225,8 @@ def publish(root,cfg):
  if release and not release['draft']:
   with urllib.request.urlopen('https://github.com/'+REPO+'/releases/download/'+tag+'/manifest.signed.json',timeout=60) as r:existing_manifest=verify_signature(r.read(8*1024*1024+1),public)
   publication_plan(m,existing_manifest)
- files=[bundle/'manifest.signed.json',bundle/'completeness.json',bundle/'base.full.z',bundle/'resolver.full.z',bundle/'NOTICE.txt',bundle/'BUILD_RECEIPT.json']
+ files=[bundle/'manifest.signed.json',bundle/m['proof']['name'],*[bundle/a['name'] for c in m['components'] for a in [c['full'],*c['packs']]],bundle/'NOTICE.txt',bundle/'BUILD_RECEIPT.json']
+ if with_summary:files += [bundle/'SEMANTIC.json']
  if not release:release=api('releases','POST',{'tag_name':tag,'target_commitish':os.environ['GITHUB_SHA'],'name':tag,'draft':True,'prerelease':False,'make_latest':'false','body':'GEO4 first-install full closure. No legacy/latest update. Public readback gates signed channel.'},token)
  existing={a['name']:a for a in release['assets']}
  if set(existing)-{p.name for p in files}:raise ValueError('UNEXPECTED_IMMUTABLE_ASSET')
@@ -250,6 +252,9 @@ def publish(root,cfg):
  if api('releases/latest')['id']!=cfg['legacy_release_id']:raise ValueError('LEGACY_LATEST_CHANGED_BEFORE_CHANNEL')
  current=api('git/ref/heads/'+CHANNEL,token=token);current_id=current['object']['sha'] if current else 'ABSENT';gate_channel(expected,current_id,True)
  channel={'contract':'GEO4_CHANNEL_1','sequence':m['sequence'],'logical_identity':m['logical_identity'],'manifest_url':url,'manifest_bytes':len(actual),'manifest_sha256':digest(actual)}
+ if with_summary:
+  from auto1 import compatibility_summary
+  channel['compatibility']=compatibility_summary(verify_signature(actual,public),digest(actual),20047)
  signed=sign(channel,key,public['key_id'],CHANNEL_DOMAIN);assert verify_signature(signed,public,CHANNEL_DOMAIN)==channel
  blob=api('git/blobs','POST',{'content':base64.b64encode(signed).decode(),'encoding':'base64'},token)
  body={'tree':[{'path':CHANNEL_FILE,'mode':'100644','type':'blob','sha':blob['sha']}]}
