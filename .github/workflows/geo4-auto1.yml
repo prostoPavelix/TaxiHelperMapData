@@ -1,5 +1,7 @@
 name: GEO4 AUTO1 monthly preparation
 on:
+  schedule:
+    - cron: '43 17 2 * *'
   push:
     branches: [main, codex/geo4-auto1-b]
   pull_request:
@@ -18,7 +20,7 @@ on:
         type: boolean
         default: false
         description: Explicitly allow one real build for changed inputs in manual cycle
-# Monthly schedule is added only after unattended rehearsal succeeds.
+# Enabled after unattended no-GEO readiness PASS: run39864379272.
 permissions:
   contents: read
 concurrency:
