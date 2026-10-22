@@ -1,0 +1,214 @@
+name: GEO4 AUTO1 monthly preparation
+on:
+  push:
+    branches: [main, codex/geo4-auto1-b]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [rehearse, cycle, resume]
+        default: rehearse
+        description: Rehearse has zero GEO payload/build/release; resume never builds
+      resume_run:
+        type: string
+        default: ''
+        description: Exact current trusted workflow run with a verified build bundle
+      allow_build:
+        type: boolean
+        default: false
+        description: Explicitly allow one real build for changed inputs in manual cycle
+# Monthly schedule is added only after unattended rehearsal succeeds.
+permissions:
+  contents: read
+concurrency:
+  group: geo4-production-single-publication
+  cancel-in-progress: false
+jobs:
+  contracts:
+    name: AUTO1 contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - run: python -m pip install --disable-pip-version-check cryptography==50.0.2 PyNaCl==1.6.2 cffi==2.1.1 pycparser==3.11
+      - run: python -m unittest discover -s geo4-tools/auto1 -p test_cloud.py
+      - run: python -m unittest discover -s geo4-tools -p test_stage5.py
+  plan:
+    name: GEO4 plan
+    needs: contracts
+    if: github.repository == 'prostoPavelix/TaxiHelperMapData' && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      action: ${{ steps.plan.outputs.action }}
+    env:
+      GEO4_ROOT: ${{ github.workspace }}/build/geo4-auto1
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - run: python -m pip install --disable-pip-version-check PyNaCl==1.6.2 cffi==2.1.1 pycparser==3.11
+      - id: plan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CYCLE_MODE: ${{ github.event_name == 'schedule' && 'cycle' || inputs.mode }}
+        run: python geo4-tools/auto1/cloud.py plan --root "$GEO4_ROOT" --cycle-mode "$CYCLE_MODE"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-meta-plan-${{ github.run_id }}
+          path: ${{ env.GEO4_ROOT }}/CYCLE.json
+          retention-days: 21
+  build:
+    name: GEO4 build
+    needs: plan
+    if: (needs.plan.outputs.action == 'BUILD_ONCE' || needs.plan.outputs.action == 'ACQUIRE_HASH_BUILD_ONCE') && (github.event_name == 'schedule' || inputs.allow_build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    outputs:
+      action: ${{ steps.build.outputs.action }}
+    env:
+      GEO4_ROOT: ${{ github.workspace }}/build/geo4-auto1
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: geo4-meta-plan-${{ github.run_id }}
+          path: ${{ env.GEO4_ROOT }}
+      - run: python geo4-tools/runner.py start "$GEO4_ROOT"
+      - run: python geo4-tools/runner.py cleanup "$GEO4_ROOT"
+      - run: python -m pip install --disable-pip-version-check -r geo4-tools/source/taxihelper2_workspace/tools/geo2/requirements.txt
+      - id: build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python geo4-tools/auto1/cloud.py build --root "$GEO4_ROOT"
+      - if: steps.build.outputs.action == 'VERIFIED_RELEASE'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-verified-bundle-${{ github.run_id }}
+          path: ${{ env.GEO4_ROOT }}/bundle/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 21
+      - if: always()
+        run: python geo4-tools/runner.py finish "$GEO4_ROOT"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-meta-build-${{ github.run_id }}
+          path: |
+            ${{ env.GEO4_ROOT }}/CYCLE.json
+            ${{ env.GEO4_ROOT }}/SEMANTIC_*.json
+            ${{ env.GEO4_ROOT }}/*RECEIPT.json
+          retention-days: 21
+  publish:
+    name: GEO4 protected publish or readiness
+    needs: [plan, build]
+    if: always() && needs.plan.result == 'success' && github.repository == 'prostoPavelix/TaxiHelperMapData' && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && (needs.plan.outputs.action == 'REHEARSAL_UNCHANGED' || needs.plan.outputs.action == 'RESUME' || needs.build.outputs.action == 'VERIFIED_RELEASE')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: geo4-production
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GEO4_ROOT: ${{ github.workspace }}/build/geo4-auto1
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - run: python -m pip install --disable-pip-version-check cryptography==50.0.2 PyNaCl==1.6.2 cffi==2.1.1 pycparser==3.11
+      - if: needs.plan.outputs.action == 'REHEARSAL_UNCHANGED'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: geo4-meta-plan-${{ github.run_id }}
+          path: ${{ env.GEO4_ROOT }}
+      - if: needs.plan.outputs.action == 'RESUME'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GEO4_RESUME_RUN: ${{ inputs.resume_run }}
+        run: python geo4-tools/auto1/cloud.py resume-origin --root "$GEO4_ROOT"
+      - if: needs.plan.outputs.action != 'REHEARSAL_UNCHANGED'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: geo4-verified-bundle-${{ inputs.mode == 'resume' && inputs.resume_run || github.run_id }}
+          run-id: ${{ inputs.mode == 'resume' && inputs.resume_run || github.run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ env.GEO4_ROOT }}/bundle
+      - name: Exact verification and production key only here
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GEO4_SIGNING_KEY_PEM: ${{ secrets.GEO4_SIGNING_KEY_PEM }}
+          GEO4_SIGNING_KEY_ID: ${{ vars.GEO4_SIGNING_KEY_ID }}
+          MODE: ${{ needs.plan.outputs.action == 'REHEARSAL_UNCHANGED' && 'rehearse-sign' || 'publish' }}
+        run: python geo4-tools/auto1/cloud.py "$MODE" --root "$GEO4_ROOT"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: geo4-meta-finish-${{ github.run_id }}
+          path: |
+            ${{ env.GEO4_ROOT }}/CYCLE.json
+            ${{ env.GEO4_ROOT }}/READINESS.json
+            ${{ env.GEO4_ROOT }}/PUBLICATION_RECEIPT.json
+          retention-days: 21
+  status:
+    name: GEO4 cycle status
+    needs: [plan, build, publish]
+    if: always() && github.repository == 'prostoPavelix/TaxiHelperMapData' && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      GEO4_ROOT: ${{ github.workspace }}/build/geo4-status
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - run: python -m pip install --disable-pip-version-check PyNaCl==1.6.2 cffi==2.1.1 pycparser==3.11
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          pattern: geo4-meta-*-${{ github.run_id }}
+          path: ${{ env.GEO4_ROOT }}/records
+      - name: Record real cycle with preserved previous success on failure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PLAN: ${{ needs.plan.outputs.action }}
+          BUILD: ${{ needs.build.outputs.action }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        shell: python
+        run: |
+          import os,pathlib,shutil,subprocess
+          root=pathlib.Path(os.environ['GEO4_ROOT']);root.mkdir(parents=True,exist_ok=True)
+          for stage in ['finish','build','plan']:
+              file=root/'records'/('geo4-meta-'+stage+'-'+os.environ['GITHUB_RUN_ID'])/'CYCLE.json'
+              if file.is_file():shutil.copyfile(file,root/'CYCLE.json');break
+          plan=os.environ['PLAN'];build=os.environ['BUILD'];pub=os.environ['PUBLISH_RESULT']
+          outcome='PUBLISHED' if pub=='success' and plan!='REHEARSAL_UNCHANGED' else 'REHEARSAL_UNCHANGED' if pub=='success' and plan=='REHEARSAL_UNCHANGED' else build if build=='UNCHANGED_CONTENT' and os.environ['BUILD_RESULT']=='success' else plan if plan=='UNCHANGED_INPUTS' else 'FAILED'
+          subprocess.run(['python','geo4-tools/auto1/cloud.py','status','--root',str(root),'--outcome',outcome],check=True)
